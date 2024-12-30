@@ -22,48 +22,37 @@ def setup_logging():
     log_filename = datetime.now().strftime('%d%m%Y.log')
     log_path = os.path.join(LOG_FOLDER, log_filename)
 
-    # Create a log formatter to match the specified format
-    log_formatter = logging.Formatter('%(asctime)s - Request %(method)s %(path)s from %(remote_addr)s', datefmt='%Y-%m-%d %H:%M:%S')
-
     # Set up the logger to log all request information
-    log_handler = logging.FileHandler(log_path)
-    log_handler.setFormatter(log_formatter)
-
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    logger.addHandler(log_handler)
-
+    logging.basicConfig(
+        filename=log_path,
+        level=logging.INFO,
+        format='%(asctime)s - %(message)s',
+    )
     return log_path
 
 # Function to log each request
 def log_request():
-    """Log the request details including method, path, and IP address."""
+    """Log the request details including method and IP address."""
     log_path = setup_logging()
-    logger = logging.getLogger()
-
     method = request.method
-    path = request.path
+    ip = request.remote_addr
+    log_message = f"Request {method} from {ip}"
 
-    # Extract the client IP address from X-Forwarded-For or fallback to remote_addr
-    if 'X-Forwarded-For' in request.headers:
-        ip = request.headers['X-Forwarded-For'].split(',')[0].strip()
-    else:
-        ip = request.remote_addr
-
-    # Log the request with method, path, and IP
-    logger.info('', extra={'method': method, 'path': path, 'remote_addr': ip})
+    logging.info(log_message)
 
 # Function to log file upload
 def log_upload(file_name):
     """Log the file upload event."""
     log_path = setup_logging()
-    logger = logging.getLogger()
-    
-    logger.info(f'"{file_name}" uploaded!')
+    logging.info(f'"{file_name}" uploaded!')
 
     # After logging, check if the log file is empty, and delete it if necessary
     if os.stat(log_path).st_size == 0:
         os.remove(log_path)
+
+def allowed_file(filename):
+    """Check if a file has an allowed extension."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.before_request
 def before_request():
